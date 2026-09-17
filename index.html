@@ -1,0 +1,535 @@
+<title>Nervensystem-Aktivierungskalkulator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Dancing+Script:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --aubergine: #5D4552;
+    --cream: #FFF6EE;
+    --sage-light: #BFC4BB;
+    --mauve: #9D9196;
+    --sage-deep: #6E7D6E;
+    --gold: #C9A876;
+
+    --bg: var(--cream);
+    --surface: #FFFCF7;
+    --surface-strong: #F3ECE1;
+    --border: #E7DFD3;
+    --border-strong: var(--aubergine);
+    --fg: var(--aubergine);
+    --muted: var(--mauve);
+    --track: var(--sage-light);
+    --marker: var(--gold);
+    --shadow: 0 1px 2px rgba(93, 69, 82, 0.06), 0 10px 28px rgba(93, 69, 82, 0.08);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { background: var(--bg); }
+  body {
+    color: var(--fg);
+    font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .app {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 48px 20px 96px;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+  .kicker {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--sage-deep);
+  }
+  h1 {
+    font-family: "Plus Jakarta Sans", sans-serif;
+    font-weight: 800;
+    font-size: 1.9rem;
+    line-height: 1.2;
+    margin: 0;
+    text-wrap: balance;
+    color: var(--aubergine);
+  }
+  .script-accent {
+    font-family: "Dancing Script", cursive;
+    font-weight: 700;
+    font-size: 1.3em;
+    color: var(--gold);
+  }
+  .subtitle {
+    color: var(--muted);
+    margin: 0;
+    max-width: 65ch;
+    font-size: 1rem;
+    line-height: 1.55;
+  }
+
+  /* sticky result panel */
+  .result-panel {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    padding: 26px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .result-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .result-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--sage-deep);
+  }
+  .result-band {
+    font-size: 1.4rem;
+    font-weight: 800;
+    margin: 3px 0 0;
+    color: var(--aubergine);
+  }
+  .signal-count {
+    font-size: 0.85rem;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    line-height: 1.5;
+  }
+
+  .gauge { position: relative; width: 100%; }
+  .gauge-track {
+    position: relative;
+    height: 10px;
+    border-radius: 999px;
+    background: var(--track);
+    overflow: visible;
+  }
+  .gauge-zone-line {
+    position: absolute;
+    top: -3px;
+    bottom: -3px;
+    width: 1px;
+    background: var(--aubergine);
+    opacity: 0.35;
+  }
+  .gauge-marker {
+    position: absolute;
+    top: 50%;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--gold);
+    border: 2.5px solid var(--aubergine);
+    transform: translate(-50%, -50%);
+    transition: left 0.25s ease;
+  }
+  .gauge-scale {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.74rem;
+    color: var(--muted);
+    margin-top: 8px;
+  }
+
+  .result-description {
+    margin: 0;
+    font-size: 0.98rem;
+    line-height: 1.6;
+  }
+
+  .card {
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 26px 28px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .section-label {
+    font-size: 0.74rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--sage-deep);
+    margin: 0;
+  }
+
+  .checklist-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+  }
+
+  fieldset {
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    padding: 20px 22px 22px;
+    margin: 0;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  legend {
+    padding: 0 8px;
+    font-weight: 700;
+    font-size: 1.02rem;
+    color: var(--aubergine);
+  }
+  .checklist {
+    display: flex;
+    flex-direction: column;
+    gap: 11px;
+  }
+  .check-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 11px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    line-height: 1.45;
+  }
+  .check-item input {
+    margin-top: 3px;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    accent-color: var(--aubergine);
+    cursor: pointer;
+  }
+
+  .recommendations {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    counter-reset: step;
+  }
+  .recommendations li {
+    counter-increment: step;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    font-size: 0.96rem;
+    line-height: 1.55;
+  }
+  .recommendations li::before {
+    content: counter(step);
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1.5px solid var(--gold);
+    color: var(--aubergine);
+    font-weight: 700;
+    font-size: 0.82rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1px;
+  }
+
+  .actions { display: flex; justify-content: flex-end; }
+  button {
+    font-family: inherit;
+    font: inherit;
+    font-weight: 700;
+    font-size: 0.93rem;
+    padding: 11px 22px;
+    border-radius: 9px;
+    border: 1.5px solid var(--border);
+    background: transparent;
+    color: var(--aubergine);
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  button:hover { border-color: var(--aubergine); background: var(--surface-strong); }
+  button:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+
+  .disclaimer {
+    font-size: 0.82rem;
+    color: var(--muted);
+    border-top: 1px solid var(--border);
+    padding-top: 18px;
+    line-height: 1.5;
+  }
+</style>
+
+<div id="root"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+
+<script>
+(function () {
+  const h = React.createElement;
+  const useState = React.useState;
+  const useMemo = React.useMemo;
+
+  const HYPER_SYMPTOMS = [
+    "Dein Herz schlägt spürbar schneller, oder Du merkst ein Rasen in der Brust.",
+    "Du hast das Gefühl, nicht richtig durchatmen zu können.",
+    "Du merkst, dass Du die Zähne zusammenbeißt, die Schultern hochziehst oder die Fäuste ballst.",
+    "Du kannst kaum stillsitzen — Du tippst mit dem Fuß, läufst hin und her oder fummelst an etwas herum.",
+    "Kleinigkeiten bringen Dich gerade schneller auf die Palme als sonst.",
+    "Deine Gedanken drehen sich im Kreis, Du kommst gedanklich nicht zur Ruhe.",
+    "Du hast das Gefühl, es müsste sofort etwas passieren — Warten fällt Dir gerade schwer.",
+    "Du schreckst bei Geräuschen leichter zusammen als sonst oder fühlst Dich \"auf der Hut\"."
+  ];
+
+  const HYPO_SYMPTOMS = [
+    "Deine Arme oder Beine fühlen sich schwer an, als würden sie mehr wiegen als sonst.",
+    "Du fühlst Dich wie unter einer Glasglocke — wie von Dir selbst abgeschnitten.",
+    "Du merkst kaum, dass Du atmest.",
+    "Du liest denselben Satz mehrmals, ohne ihn wirklich zu erfassen, oder verlierst leicht den Faden.",
+    "Selbst einfache Dinge wie Aufstehen oder Antworten fühlen sich gerade zu anstrengend an.",
+    "Du willst gerade nur, dass man Dich in Ruhe lässt.",
+    "Du müsstest eigentlich etwas fühlen, spürst aber innerlich fast nichts.",
+    "Du brauchst spürbar länger als sonst, um zu antworten oder zu reagieren."
+  ];
+
+  const RECURRING_TIP =
+    "Zusatz-Tipp bei wiederkehrenden Mustern: Klopfe mehrmals sanft die Außenkanten Deiner Hände aneinander (Handkante gegen Handkante). Das aktiviert einen bekannten Akupressurpunkt (Dü3) und kann helfen, wenn derselbe Stresszustand bei Dir immer wieder auftaucht.";
+
+  const BANDS = [
+    {
+      id: "hypo-stark",
+      max: 20,
+      label: "Starke Unteraktivierung",
+      sub: "Dorsale Aktivierung — Shutdown",
+      description:
+        "Dieser Zustand entsteht meist, nachdem bereits eine Grenze überschritten wurde: Ein zu lange andauernder Kampf- oder Flucht-Zustand hat Dein System in eine Art Abschalten geführt. Das ist Erschöpfung, keine Entscheidung — und jetzt helfen vor allem körperliche Impulse, kein Zureden.",
+      recommendations: [
+        "Schmetterlingsumarmung: Arme vor der Brust kreuzen, Hände auf die Oberarme legen und abwechselnd sanft links-rechts klopfen — wie ein Schmetterlingsflügelschlag. Das bringt Deinen Körper spürbar zurück, ohne dass Du etwas denken oder erklären musst.",
+        "5-4-3-2-1-Sinnesübung, ganz langsam, ein Sinn nach dem anderen: 5 Dinge, die Du siehst. 4 Dinge, die Du hörst. 3 Dinge, die Du riechst. 2 Dinge, die Du fühlst. 1 Sache, die Du schmeckst oder gerade gerne schmecken würdest."
+      ]
+    },
+    {
+      id: "hypo-leicht",
+      max: 40,
+      label: "Leichte Unteraktivierung",
+      sub: "Beginnender Rückzug",
+      description:
+        "Dein System beginnt gerade, sich zurückzuziehen — meist, weil es zuvor über längere Zeit aktiviert war und jetzt Kraft spart. Körperliche Impulse helfen jetzt, bevor daraus mehr wird.",
+      recommendations: [
+        "Schmetterlingsumarmung: Arme vor der Brust kreuzen, Hände auf die Oberarme legen und abwechselnd sanft links-rechts klopfen — wie ein Schmetterlingsflügelschlag.",
+        "5-4-3-2-1-Sinnesübung: 5 Dinge sehen, 4 hören, 3 riechen, 2 fühlen, 1 schmecken (oder Dir vorstellen).",
+        "Falls sich die Konzentration auf den eigenen Körper gerade schwer anfühlt: Suche stattdessen 10 blaue oder 10 runde Dinge in Deiner Umgebung — auch das holt Dich zurück."
+      ]
+    },
+    {
+      id: "reguliert",
+      max: 60,
+      label: "Reguliert",
+      sub: "Im Toleranzfenster",
+      description:
+        "Dein Nervensystem ist gerade weder über- noch unteraktiviert. Ein guter Moment, um genau das kurz bewusst wahrzunehmen.",
+      recommendations: [
+        "Nimm Dir einen Moment, um zu spüren, wie sich dieser Zustand konkret anfühlt — das hilft Deinem System, ihn künftig leichter wiederzufinden.",
+        "Notiere Dir kurz, was gerade dazu beigetragen hat, diesen Zustand zu erreichen — das hilft Dir, ihn beim nächsten Mal leichter wieder herzustellen."
+      ]
+    },
+    {
+      id: "hyper-leicht",
+      max: 80,
+      label: "Leichte Überaktivierung",
+      sub: "Beginnende Mobilisierung",
+      description:
+        "Dein System ist gerade aktiviert. Noch ist es gut möglich, wieder herunterzuregulieren, bevor sich die Aktivierung weiter aufbaut.",
+      recommendations: [
+        "Box-Atmung: 4 Sekunden einatmen — 4 Sekunden die Luft anhalten — 4 Sekunden ausatmen — 4 Sekunden Pause. 4 bis 6 Runden wiederholen.",
+        "5-4-3-2-1-Sinnesübung: 5 Dinge sehen, 4 hören, 3 riechen, 2 fühlen, 1 schmecken.",
+        "Richte Deinen Fokus bewusst auf einen neutralen Punkt — Deinen Atem, Deine Füße auf dem Boden, einen Gegenstand in Deiner Hand."
+      ]
+    },
+    {
+      id: "hyper-stark",
+      max: 100,
+      label: "Starke Überaktivierung",
+      sub: "Sympathikus aktiv — Hyperarousal",
+      description:
+        "Dein System befindet sich gerade in deutlicher Mobilisierung. Weitere Reize oder das Grübeln über die Situation verstärken das eher, als es zu senken — jetzt hilft vor allem Verlangsamung.",
+      recommendations: [
+        "Box-Atmung, mehrere Runden: 4 Sekunden ein — 4 Sekunden halten — 4 Sekunden aus — 4 Sekunden Pause. Wiederholen, bis der Atem spürbar ruhiger wird.",
+        "Schmetterlingsumarmung: Arme vor der Brust kreuzen und abwechselnd sanft links-rechts auf die Oberarme klopfen.",
+        RECURRING_TIP
+      ]
+    }
+  ];
+
+  function computeResult(hyperChecked, hypoChecked) {
+    const nHyper = hyperChecked.filter(Boolean).length;
+    const nHypo = hypoChecked.filter(Boolean).length;
+    const net = nHyper - nHypo;
+    const position = 50 + (net / 8) * 50;
+    const band = BANDS.find(function (b) { return position <= b.max; }) || BANDS[BANDS.length - 1];
+    return { position: position, band: band, nHyper: nHyper, nHypo: nHypo };
+  }
+
+  function Kicker() {
+    return h("div", { className: "kicker" }, "NeuroXpert Academy");
+  }
+
+  function Checklist(props) {
+    return h(
+      "fieldset",
+      null,
+      h("legend", null, props.title),
+      h(
+        "div",
+        { className: "checklist" },
+        props.items.map(function (item, i) {
+          return h(
+            "label",
+            { className: "check-item", key: i },
+            h("input", {
+              type: "checkbox",
+              checked: props.checked[i],
+              onChange: function () { props.onToggle(i); }
+            }),
+            h("span", null, item)
+          );
+        })
+      )
+    );
+  }
+
+  function ResultPanel(props) {
+    const r = props.result;
+    return h(
+      "div",
+      { className: "result-panel" },
+      h(
+        "div",
+        { className: "result-top" },
+        h(
+          "div",
+          null,
+          h("div", { className: "result-label" }, "Aktivierungslevel · " + r.band.sub),
+          h("div", { className: "result-band" }, r.band.label)
+        ),
+        h(
+          "div",
+          { className: "signal-count" },
+          "Überaktivierung: " + r.nHyper + "/8", h("br"),
+          "Unteraktivierung: " + r.nHypo + "/8"
+        )
+      ),
+      h(
+        "div",
+        { className: "gauge" },
+        h(
+          "div",
+          { className: "gauge-track" },
+          h("div", { className: "gauge-zone-line", style: { left: "40%" } }),
+          h("div", { className: "gauge-zone-line", style: { left: "60%" } }),
+          h("div", { className: "gauge-marker", style: { left: r.position + "%" } })
+        ),
+        h(
+          "div",
+          { className: "gauge-scale" },
+          h("span", null, "Unteraktiviert"),
+          h("span", null, "Reguliert"),
+          h("span", null, "Überaktiviert")
+        )
+      ),
+      h("p", { className: "result-description" }, r.band.description),
+      h(
+        "div",
+        null,
+        h("p", { className: "section-label", style: { marginBottom: "12px" } }, "Was Dir jetzt helfen kann"),
+        h(
+          "ol",
+          { className: "recommendations" },
+          r.band.recommendations.map(function (rec, i) { return h("li", { key: i }, rec); })
+        )
+      )
+    );
+  }
+
+  function App() {
+    const hyperState = useState(new Array(HYPER_SYMPTOMS.length).fill(false));
+    const hyperChecked = hyperState[0], setHyperChecked = hyperState[1];
+    const hypoState = useState(new Array(HYPO_SYMPTOMS.length).fill(false));
+    const hypoChecked = hypoState[0], setHypoChecked = hypoState[1];
+
+    function toggleHyper(i) {
+      const next = hyperChecked.slice();
+      next[i] = !next[i];
+      setHyperChecked(next);
+    }
+    function toggleHypo(i) {
+      const next = hypoChecked.slice();
+      next[i] = !next[i];
+      setHypoChecked(next);
+    }
+    function reset() {
+      setHyperChecked(new Array(HYPER_SYMPTOMS.length).fill(false));
+      setHypoChecked(new Array(HYPO_SYMPTOMS.length).fill(false));
+    }
+
+    const result = useMemo(function () {
+      return computeResult(hyperChecked, hypoChecked);
+    }, [hyperChecked, hypoChecked]);
+
+    return h(
+      "div",
+      { className: "app" },
+      h(Kicker),
+      h("h1", null, h("span", { className: "script-accent" }, "Dein"), " Nervensystem-Aktivierungskalkulator"),
+      h(
+        "p",
+        { className: "subtitle" },
+        "Markiere, was gerade auf Dich zutrifft. Du siehst sofort, wo Dein Nervensystem gerade steht — und bekommst konkrete Schritte, die Dir jetzt wirklich helfen können."
+      ),
+      h(ResultPanel, { result: result }),
+      h(
+        "div",
+        { className: "checklist-grid" },
+        h(Checklist, {
+          title: "Anzeichen von Überaktivierung",
+          items: HYPER_SYMPTOMS,
+          checked: hyperChecked,
+          onToggle: toggleHyper
+        }),
+        h(Checklist, {
+          title: "Anzeichen von Unteraktivierung",
+          items: HYPO_SYMPTOMS,
+          checked: hypoChecked,
+          onToggle: toggleHypo
+        })
+      ),
+      h(
+        "div",
+        { className: "actions" },
+        h("button", { onClick: reset }, "Zurücksetzen")
+      ),
+      h(
+        "p",
+        { className: "disclaimer" },
+        "Dieses Tool bietet eine Orientierungshilfe auf Basis dessen, was Du gerade an Dir wahrnimmst. Es ersetzt keine Diagnostik, Therapie oder das Gespräch mit Deiner Begleiterin oder Deinem Begleiter."
+      )
+    );
+  }
+
+  ReactDOM.createRoot(document.getElementById("root")).render(h(App));
+})();
+</script>
